@@ -1,10 +1,10 @@
-=== Local Auto Tag Generator Pro ===
-Contributors: masato-shibuya
+=== Local Auto Tag Generator ===
+Contributors: masato shibuya(Image-box Co., Ltd.)
 Tags: taxonomy, tag, auto tag, japanese, nlp
 Requires at least: 5.0
 Tested up to: 6.4
 Requires PHP: 8.0
-Stable tag: 1.0
+Stable tag: 1.1
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -36,10 +36,10 @@ JpnForPhpライブラリ（TinySegmenter）を使用した、ローカル完結型の日本語自動タグ生
 
 == Changelog ==
 
-= 1.6 =
-* フォルダ構成の変更に伴うオートローダーのパス調整。
-= 1.5 =
-* JpnForPhp 名前空間への完全対応と自前オートローダーの実装。
+= 1.1 =
+* テキスト修正。
+* オンライン更新の確認。
+
 = 1.0 =
 * 初版リリース。
 
