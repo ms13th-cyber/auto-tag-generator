@@ -1,0 +1,37 @@
+{
+  "name": "jpnforphp/converter",
+  "type": "library",
+  "description": "JpnForPhp COnverter Component",
+  "keywords": [],
+  "homepage": "http://mbilbille.github.com/jpnforphp/",
+  "license": "MIT",
+  "authors": [
+    {
+      "name": "Matthieu Bilbille",
+      "email": "matthieu.bilbille@gmail.com",
+      "homepage": "https://github.com/mbilbille"
+    },
+    {
+      "name": "Axel Bodart",
+      "homepage": "https://github.com/Akeru"
+    }
+  ],
+  "support": {
+    "source" : "https://github.com/mbilbille/jpnforphp/tree/master",
+    "issues": "https://github.com/mbilbille/jpnforphp/issues"
+    },
+  "require": {
+    "php": ">=7.1",
+    "jpnforphp/analyzer": ">=0.8",
+    "jpnforphp/helper": ">=0.8"
+  },
+  "autoload": {
+    "psr-0": { "JpnForPhp\\Converter": "" }
+  },
+  "target-dir": "JpnForPhp/Converter",
+  "extra": {
+    "branch-alias": {
+      "dev-master": "0.9-dev"
+    }
+  }
+}
