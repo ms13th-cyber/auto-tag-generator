@@ -2,7 +2,7 @@
 /*
 Plugin Name: Local Auto Tag Generator
 Description: TinySegmenterを使用して、外部APIを使わずにタグを自動生成します。
-Version: 1.1
+Version: 1.2
 Tested up to: 6.9.4
 Requires PHP: 8.3.23
 Author: masato shibuya(Image-box Co., Ltd.)
@@ -10,7 +10,7 @@ Author: masato shibuya(Image-box Co., Ltd.)
 
 if (!defined('ABSPATH')) exit;
 
-// --- 1. ライブラリの自動読み込み設定 (あなたのフォルダ構成に最適化) ---
+// --- 1. ライブラリの自動読み込み設定---
 spl_autoload_register(function ($class) {
     // クラス名が 'JpnForPhp\' で始まるかチェック
     $prefix = 'JpnForPhp\\';

@@ -4,7 +4,7 @@ Tags: taxonomy, tag, auto tag, japanese, nlp
 Requires at least: 5.0
 Tested up to: 6.4
 Requires PHP: 8.0
-Stable tag: 1.1
+Stable tag: 1.2
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -24,7 +24,7 @@ JpnForPhpライブラリ（TinySegmenter）を使用した、ローカル完結型の日本語自動タグ生
 
 == Installation ==
 
-1. `local-auto-tag-generator` フォルダを `/wp-content/plugins/` ディレクトリにアップロードします。
+1. `auto-tag-generator` フォルダを `/wp-content/plugins/` ディレクトリにアップロードします。
 2. `lib/JpnForPhp/` フォルダ内に JpnForPhp ライブラリが配置されていることを確認してください。
    (構成例: lib/JpnForPhp/Analyzer/TinySegmenter.php)
 3. WordPressの「プラグイン」メニューから有効化します。
@@ -35,6 +35,9 @@ JpnForPhpライブラリ（TinySegmenter）を使用した、ローカル完結型の日本語自動タグ生
 1. 設定画面：対象投稿タイプの選択と除外ワードの設定、一括生成ボタン。
 
 == Changelog ==
+
+= 1.2 =
+* テキスト修正。
 
 = 1.1 =
 * テキスト修正。
