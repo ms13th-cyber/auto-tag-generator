@@ -1,8 +1,8 @@
 <?php
 /*
 Plugin Name: Local Auto Tag Generator
-Description: TinySegmenterを使用して、外部APIを使わずにタグを自動生成します。
-Version: 1.2
+Description: TinySegmenterを使用して、外部APIを使わずにタグを自動生成します（精度向上版）。
+Version: 1.3
 Tested up to: 6.9.4
 Requires PHP: 8.3.23
 Author: masato shibuya(Image-box Co., Ltd.)
@@ -10,18 +10,16 @@ Author: masato shibuya(Image-box Co., Ltd.)
 
 if (!defined('ABSPATH')) exit;
 
-// --- 1. ライブラリの自動読み込み設定---
+// --- 1. ライブラリの自動読み込み設定 ---
 spl_autoload_register(function ($class) {
-    // クラス名が 'JpnForPhp\' で始まるかチェック
     $prefix = 'JpnForPhp\\';
-    $base_dir = plugin_dir_path(__FILE__) . 'lib/JpnForPhp/'; // 直接 lib/JpnForPhp を見に行く
+    $base_dir = plugin_dir_path(__FILE__) . 'lib/JpnForPhp/';
 
     $len = strlen($prefix);
     if (strncmp($prefix, $class, $len) !== 0) {
         return;
     }
 
-    // 相対クラス名を取得し、パスに変換
     $relative_class = substr($class, $len);
     $file = $base_dir . str_replace('\\', '/', $relative_class) . '.php';
 
@@ -70,6 +68,7 @@ function latg_settings_page() {
                     <th>除外ワード (カンマ区切り)</th>
                     <td>
                         <textarea name="exclude_words" rows="5" cols="50" class="large-text" placeholder="する,ある,こと,もの"><?php echo esc_textarea($exclude_words); ?></textarea>
+                        <p class="description">※ひらがな3文字以下は自動で除外されます。</p>
                     </td>
                 </tr>
             </table>
@@ -127,39 +126,94 @@ function latg_settings_page() {
 // --- 3. メインロジック ---
 function latg_process_auto_tagging($post_id) {
     if (!class_exists('\JpnForPhp\Analyzer\TinySegmenter')) {
-        return array('error' => 'ライブラリが見つかりません。パス: lib/JpnForPhp/Analyzer/TinySegmenter.php');
+        return array('error' => 'ライブラリが見つかりません。');
     }
 
     $post = get_post($post_id);
-    $text = strip_tags($post->post_title . ' ' . $post->post_content);
-    if (empty(trim($text))) return array('info' => '本文が空です');
+    $title = strip_tags($post->post_title);
+    $content = strip_tags($post->post_content);
+
+    if (empty(trim($title . $content))) return array('info' => '本文が空です');
 
     try {
         $ts = new \JpnForPhp\Analyzer\TinySegmenter();
-        $segments = $ts->segment($text);
+
+        // タイトルと本文を個別に分かち書き
+        $title_raw_segments = $ts->segment($title);
+        $content_raw_segments = $ts->segment($content);
 
         $exclude_raw = get_option('latg_exclude_words', '');
         $exclude_list = array_filter(array_map('trim', explode(',', $exclude_raw)));
         $existing_tags = get_terms(array('taxonomy' => 'post_tag', 'hide_empty' => false, 'fields' => 'names'));
 
-        $candidates = array();
-        foreach ($segments as $word) {
-            $word = trim($word);
-            // 2文字以上、記号・数字・空白以外
-            if (mb_strlen($word) < 2 || is_numeric($word) || preg_match('/^[、。！？（）「」『』\s：；・]+$/u', $word)) continue;
-            if (in_array($word, $exclude_list)) continue;
+        // 単語のクリーニングと「連続文字種」の結合処理
+        $refine_logic = function($segments) use ($exclude_list) {
+            $refined = [];
+            $count = count($segments);
 
-            // ひらがな2文字（助詞など）を除外
-            if (mb_strlen($word) === 2 && preg_match('/^[ぁ-ん]+$/u', $word)) continue;
+            for ($i = 0; $i < $count; $i++) {
+                $word = trim($segments[$i]);
+                if ($word === '') continue;
 
-            $candidates[] = $word;
+                // 文字種の結合ループ（漢字、カタカナ、英数字が連続していれば合体）
+                while (isset($segments[$i+1])) {
+                    $next = trim($segments[$i+1]);
+                    if ($next === '') { $i++; continue; }
+
+                    $is_joined = false;
+                    // 漢字の連続
+                    if (preg_match('/^\p{Han}+$/u', $word) && preg_match('/^\p{Han}+$/u', $next)) {
+                        $word .= $next; $is_joined = true;
+                    }
+                    // カタカナの連続
+                    elseif (preg_match('/^[ァ-ヶー]+$/u', $word) && preg_match('/^[ァ-ヶー]+$/u', $next)) {
+                        $word .= $next; $is_joined = true;
+                    }
+                    // 英数字の連続
+                    elseif (preg_match('/^[a-zA-Z0-9]+$/u', $word) && preg_match('/^[a-zA-Z0-9]+$/u', $next)) {
+                        $word .= $next; $is_joined = true;
+                    }
+
+                    if ($is_joined) { $i++; } else { break; }
+                }
+
+                // 除外フィルタ
+                if (mb_strlen($word) < 2) continue;
+                if (is_numeric($word)) continue;
+                if (preg_match('/^[、。！？（）「」『』\s：；・ー]+$/u', $word)) continue;
+                if (in_array($word, $exclude_list)) continue;
+
+                // ひらがなのみ3文字以下はタグとして弱いので除外
+                if (preg_match('/^[ぁ-ん]+$/u', $word) && mb_strlen($word) <= 3) continue;
+
+                $refined[] = $word;
+            }
+            return $refined;
+        };
+
+        $title_words = $refine_logic($title_raw_segments);
+        $content_words = $refine_logic($content_raw_segments);
+
+        // 本文の出現回数をカウント
+        $counts = array_count_values($content_words);
+
+        // 重み付け
+        foreach ($counts as $word => $count) {
+            // 既存タグに存在すれば大幅加点
+            if (in_array($word, $existing_tags)) {
+                $counts[$word] += 50;
+            }
+            // タイトルに含まれる単語なら加点
+            if (in_array($word, $title_words)) {
+                $counts[$word] += 20;
+            }
         }
 
-        if (empty($candidates)) return array('info' => 'タグになる単語が見つかりませんでした');
-
-        $counts = array_count_values($candidates);
-        foreach ($counts as $word => $count) {
-            if (in_array($word, $existing_tags)) { $counts[$word] += 50; }
+        // タイトルにあるが本文でカウントされなかった単語を補完
+        foreach ($title_words as $tw) {
+            if (!isset($counts[$tw])) {
+                $counts[$tw] = 15;
+            }
         }
 
         arsort($counts);
@@ -173,7 +227,7 @@ function latg_process_auto_tagging($post_id) {
     } catch (Throwable $e) {
         return array('error' => 'エラー: ' . $e->getMessage());
     }
-    return array('info' => '処理をスキップしました');
+    return array('info' => 'タグが見つかりませんでした');
 }
 
 // --- 4. AJAX ---
@@ -187,7 +241,7 @@ function latg_handle_ajax() {
         'post_type' => $selected_types,
         'posts_per_page' => 1,
         'offset' => $offset,
-        'post_status' => 'any'
+        'post_status' => 'publish'
     ));
 
     if ($query->have_posts()) {
@@ -203,26 +257,25 @@ function latg_handle_ajax() {
         }
         wp_send_json_success(array('done' => false, 'next_offset' => $offset + 1, 'message' => $msg));
     } else {
-        wp_send_json_success(array('done' => true, 'message' => '完了。'));
+        wp_send_json_success(array('done' => true, 'message' => '完了しました。'));
     }
 }
 
 // --- 5. 保存時実行 ---
 add_action('save_post', function($post_id, $post) {
     if (defined('DOING_AUTOSAVE') && DOING_AUTOSAVE) return;
+    if ($post->post_status !== 'publish') return; // 公開時のみ
     $selected_types = get_option('latg_post_types', array('post'));
     if (in_array($post->post_type, $selected_types)) {
         latg_process_auto_tagging($post_id);
     }
 }, 10, 2);
 
-
+// --- 6. アップデーター (元コード維持) ---
 require_once __DIR__ . '/plugin-update-checker/plugin-update-checker.php';
-
 $updateChecker = \YahnisElsts\PluginUpdateChecker\v5\PucFactory::buildUpdateChecker(
     'https://github.com/ms13th-cyber/auto-tag-generator/',
     __FILE__,
     'auto-tag-generator'
 );
-
 $updateChecker->setBranch('main');

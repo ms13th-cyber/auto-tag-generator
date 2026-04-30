@@ -4,7 +4,7 @@ Tags: taxonomy, tag, auto tag, japanese, nlp
 Requires at least: 5.0
 Tested up to: 6.4
 Requires PHP: 8.0
-Stable tag: 1.2
+Stable tag: 1.3
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -35,6 +35,9 @@ JpnForPhpライブラリ（TinySegmenter）を使用した、ローカル完結型の日本語自動タグ生
 1. 設定画面：対象投稿タイプの選択と除外ワードの設定、一括生成ボタン。
 
 == Changelog ==
+
+= 1.3 =
+* タグの生成ロジック部分を修正。
 
 = 1.2 =
 * テキスト修正。
