@@ -2,9 +2,9 @@
 Contributors: masato shibuya(Image-box Co., Ltd.)
 Tags: taxonomy, tag, auto tag, japanese, nlp
 Requires at least: 5.0
-Tested up to: 6.4
+Tested up to: 7.0.0
 Requires PHP: 8.0
-Stable tag: 1.3
+Stable tag: 1.3.1
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -35,6 +35,9 @@ JpnForPhpライブラリ（TinySegmenter）を使用した、ローカル完結型の日本語自動タグ生
 1. 設定画面：対象投稿タイプの選択と除外ワードの設定、一括生成ボタン。
 
 == Changelog ==
+
+= 1.3.1 =
+* Wordpress7.0.0での動作確認。
 
 = 1.3 =
 * タグの生成ロジック部分を修正。
